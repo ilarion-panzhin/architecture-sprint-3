@@ -1,0 +1,25 @@
+@startuml
+title Heating System Context Diagram
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+System(HeatSystem, "Heating System (Monolith)", "Monolithic system that controls actuators and monitors temperature data")
+
+Person(user, "User", "A user of the heating system")
+System(HeatSystem, "Heating System (Monolith)", "System controls heating system actuators and monitors temperature data from heating system sensors")
+
+System_Ext(actuator, "Actuator API", "External API for control of heating system actuators")
+System_Ext(sensors, "Sensor API", "External API for receiving of heating system sensor data")
+
+Note right of HeatSystem
+  Monolithic Java application
+  Deployed on a single server
+  Synchronous communication
+End Note
+
+Rel_D(user, HeatSystem, "Uses the system")
+Rel_D(HeatSystem,actuator,"Controls heating devices")
+Rel_U(sensors, HeatSystem,"Receives sensor data")
+
+@enduml
