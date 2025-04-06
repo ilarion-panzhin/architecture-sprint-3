@@ -1,0 +1,89 @@
+@startuml
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <u>x</u>
+
+skinparam backgroundColor transparent
+skinparam shadowing false
+title ER Diagram – Smart House Ecosystem (with Module ↔ Device)
+
+' Пользователь
+table(User) {
+  primary_key(id): UUID
+  name: String
+  email: String
+  password_hash: String
+}
+
+' Дом
+table(House) {
+  primary_key(id): UUID
+  user_id: UUID [FK → User]
+  name: String
+  address: String
+}
+
+' Тип устройства
+table(DeviceType) {
+  primary_key(id): UUID
+  name: String
+  description: String
+}
+
+' Устройство
+table(Device) {
+  primary_key(id): UUID
+  type_id: UUID [FK → DeviceType]
+  house_id: UUID [FK → House]
+  serial_number: String
+  status: String
+}
+
+' Состояние устройства (гибкая Mongo-схема)
+table(DeviceState) {
+  primary_key(id): UUID
+  device_id: UUID [FK → Device] (unique)
+  device_type: String
+  temperature: Float?
+  brightness: Int?
+  is_open: Boolean?
+  motion_detected: Boolean?
+  battery_level: Float?
+  last_updated: DateTime
+}
+
+' Телеметрия
+table(TelemetryData) {
+  primary_key(id): UUID
+  device_id: UUID [FK → Device]
+  timestamp: DateTime
+  value_type: String
+  data: String
+}
+
+' Модули (группировка или сценарии)
+table(Module) {
+  primary_key(id): UUID
+  name: String
+  description: String
+  user_id: UUID [FK → User]
+}
+
+' Промежуточная таблица для связи Module ↔ Device
+table(ModuleDevice) {
+  primary_key(id): UUID
+  module_id: UUID [FK → Module]
+  device_id: UUID [FK → Device]
+}
+
+' Связи
+User ||--o{ House : owns
+House ||--o{ Device : has
+DeviceType ||--o{ Device : categorized
+Device ||--|| DeviceState : has state
+Device ||--o{ TelemetryData : generates
+User ||--o{ Module : owns
+
+Module ||--o{ ModuleDevice : groups
+Device ||--o{ ModuleDevice : grouped in
+
+@enduml
