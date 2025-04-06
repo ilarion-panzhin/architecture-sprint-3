@@ -1,9 +1,14 @@
 @startuml
 !includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+skinparam componentStyle rectangle
+skinparam backgroundColor transparent
+skinparam shadowing false
+
 LAYOUT_TOP_DOWN()
 title Component Diagram: DeviceControlService
 
-Container(DeviceControlService, "Device Control Service", "Node.js", "Микросервис для управления всеми устройствами умного дома") {
+System_Boundary(DeviceControlService, "Device Control Service", "Node.js", "Микросервис для управления всеми устройствами умного дома") {
 
   Component(ApiController, "API Controller", "Express/Koa", "Обработка внешних HTTP-запросов от API Gateway")
 
@@ -18,9 +23,12 @@ Container(DeviceControlService, "Device Control Service", "Node.js", "Микро
   Component(GateDeviceHandler, "GateDeviceHandler", "Handler", "Обработка команд для ворот")
   Component(CameraDeviceHandler, "CameraDeviceHandler", "Handler", "Обработка команд для камер")
 
-  Component(RepositoryLayer, "Device Repository", "MongoRepo", "Чтение и запись данных устройств")
+  Component(RepositoryLayer, "Repository Layer", "MongoRepo", "Чтение и запись данных устройств")
   Component(DataModels, "Data Models", "DTO/Entity/Event", "Модели данных, используемые во всех слоях")
 
+  ComponentDb(DeviceDb, "DeviceControl DB", "MongoDB", "Хранит состояния и истории устройств")
+
+  ' Logic flow
   Rel(ApiController, CommandDispatcher, "Передаёт команды")
   Rel(CommandDispatcher, ValidationLayer, "Проверка команд")
   Rel(CommandDispatcher, HeatDeviceHandler, "Команды отопления")
@@ -38,10 +46,21 @@ Container(DeviceControlService, "Device Control Service", "Node.js", "Микро
   Rel(GateDeviceHandler, KafkaPublisher, "Публикует события")
   Rel(CameraDeviceHandler, KafkaPublisher, "Публикует события")
 
-  Rel(StateManager, RepositoryLayer, "Сохраняет состояние")
+  Rel(StateManager, RepositoryLayer, "Чтение/запись состояния")
+  Rel(RepositoryLayer, DeviceDb, "Чтение/запись в MongoDB")
+
+  ' DataModel usage
   Rel(CommandDispatcher, DataModels, "Использует DTO")
-  Rel(RepositoryLayer, DataModels, "Сохраняет Entity")
+  Rel(HeatDeviceHandler, DataModels, "Использует Entity")
+  Rel(LightDeviceHandler, DataModels, "Использует Entity")
+  Rel(GateDeviceHandler, DataModels, "Использует Entity")
+  Rel(CameraDeviceHandler, DataModels, "Использует Entity")
+  Rel(RepositoryLayer, DataModels, "Сохраняет/читает Entity")
   Rel(KafkaPublisher, DataModels, "Публикует Event")
 }
+
+' External Kafka broker
+Component(kafkaBroker, "Kafka", "Apache Kafka", "Событийная шина данных")
+Rel(KafkaPublisher, kafkaBroker, "Публикует события в Kafka")
 
 @enduml
