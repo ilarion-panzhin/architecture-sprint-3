@@ -1,0 +1,61 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam backgroundColor transparent
+skinparam shadowing false
+
+title UML Class Diagram – CommandDispatcher and Related Classes
+
+' DTO
+class Command {
+  - String deviceId
+  - String deviceType
+  - String commandType
+  - String payload
+}
+
+' Интерфейс обработчика
+interface ICommandHandler {
+  + handle(Command command)
+}
+
+class HeatDeviceHandler {
+}
+class LightDeviceHandler {
+}
+class GateDeviceHandler {
+}
+class CameraDeviceHandler {
+}
+
+HeatDeviceHandler -up-|> ICommandHandler
+LightDeviceHandler -up-|> ICommandHandler
+GateDeviceHandler -up-|> ICommandHandler
+CameraDeviceHandler -up-|> ICommandHandler
+
+' Интерфейс валидатора
+interface IValidationService {
+  + validate(Command command)
+}
+
+class DeviceCommandValidationService {
+}
+DeviceCommandValidationService -up-|> IValidationService
+
+' Реестр/фабрика обработчиков
+class HandlerRegistry {
+  + register(String deviceType, ICommandHandler handler)
+  + getHandler(String deviceType): ICommandHandler
+  - Map<String, ICommandHandler> handlers
+}
+
+' Главный диспетчер
+class CommandDispatcher {
+  - IValidationService validationService
+  - HandlerRegistry handlerRegistry
+  + dispatch(Command command)
+}
+
+CommandDispatcher --> HandlerRegistry : uses
+CommandDispatcher --> IValidationService : validates
+CommandDispatcher --> Command : dispatches
+HandlerRegistry --> ICommandHandler : returns
