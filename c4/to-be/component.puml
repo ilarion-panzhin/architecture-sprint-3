@@ -1,0 +1,66 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+skinparam componentStyle rectangle
+skinparam backgroundColor transparent
+skinparam shadowing false
+
+LAYOUT_TOP_DOWN()
+title Component Diagram: DeviceControlService
+
+System_Boundary(DeviceControlService, "Device Control Service", "Node.js", "Микросервис для управления всеми устройствами умного дома") {
+
+  Component(ApiController, "API Controller", "Express/Koa", "Обработка внешних HTTP-запросов от API Gateway")
+
+  Component(CommandDispatcher, "Command Dispatcher", "Service Layer", "Маршрутизация команд к нужным обработчикам устройств")
+  Component(ValidationLayer, "Validation Layer", "Business Rules", "Проверка корректности и безопасности команд")
+  Component(StateManager, "Device State Manager", "In-Memory/Cache", "Хранит и обновляет состояние устройств")
+
+  Component(KafkaPublisher, "Kafka Publisher", "Event Adapter", "Публикует события об изменениях в Kafka")
+
+  Component(HeatDeviceHandler, "HeatDeviceHandler", "Handler", "Обработка команд для отопления")
+  Component(LightDeviceHandler, "LightDeviceHandler", "Handler", "Обработка команд для освещения")
+  Component(GateDeviceHandler, "GateDeviceHandler", "Handler", "Обработка команд для ворот")
+  Component(CameraDeviceHandler, "CameraDeviceHandler", "Handler", "Обработка команд для камер")
+
+  Component(RepositoryLayer, "Repository Layer", "MongoRepo", "Чтение и запись данных устройств")
+  Component(DataModels, "Data Models", "DTO/Entity/Event", "Модели данных, используемые во всех слоях")
+
+  ComponentDb(DeviceDb, "DeviceControl DB", "MongoDB", "Хранит состояния и истории устройств")
+
+  ' Logic flow
+  Rel(ApiController, CommandDispatcher, "Передаёт команды")
+  Rel(CommandDispatcher, ValidationLayer, "Проверка команд")
+  Rel(CommandDispatcher, HeatDeviceHandler, "Команды отопления")
+  Rel(CommandDispatcher, LightDeviceHandler, "Команды освещения")
+  Rel(CommandDispatcher, GateDeviceHandler, "Команды ворот")
+  Rel(CommandDispatcher, CameraDeviceHandler, "Команды камер")
+
+  Rel(HeatDeviceHandler, StateManager, "Получает/обновляет состояние")
+  Rel(LightDeviceHandler, StateManager, "Получает/обновляет состояние")
+  Rel(GateDeviceHandler, StateManager, "Получает/обновляет состояние")
+  Rel(CameraDeviceHandler, StateManager, "Получает/обновляет состояние")
+
+  Rel(HeatDeviceHandler, KafkaPublisher, "Публикует события")
+  Rel(LightDeviceHandler, KafkaPublisher, "Публикует события")
+  Rel(GateDeviceHandler, KafkaPublisher, "Публикует события")
+  Rel(CameraDeviceHandler, KafkaPublisher, "Публикует события")
+
+  Rel(StateManager, RepositoryLayer, "Чтение/запись состояния")
+  Rel(RepositoryLayer, DeviceDb, "Чтение/запись в MongoDB")
+
+  ' DataModel usage
+  Rel(CommandDispatcher, DataModels, "Использует DTO")
+  Rel(HeatDeviceHandler, DataModels, "Использует Entity")
+  Rel(LightDeviceHandler, DataModels, "Использует Entity")
+  Rel(GateDeviceHandler, DataModels, "Использует Entity")
+  Rel(CameraDeviceHandler, DataModels, "Использует Entity")
+  Rel(RepositoryLayer, DataModels, "Сохраняет/читает Entity")
+  Rel(KafkaPublisher, DataModels, "Публикует Event")
+}
+
+' External Kafka broker
+Component(kafkaBroker, "Kafka", "Apache Kafka", "Событийная шина данных")
+Rel(KafkaPublisher, kafkaBroker, "Публикует события в Kafka")
+
+@enduml

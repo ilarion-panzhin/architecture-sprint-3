@@ -1,0 +1,87 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Container.puml
+LAYOUT_TOP_DOWN()
+title Container Diagram: Smart House Ecosystem (Full Scope with Extensions)
+
+Person(userWeb, "User (Web)", "Пользователь через веб-интерфейс")
+Person(userMobile, "User (Mobile)", "Пользователь через мобильное приложение")
+
+System_Boundary(s1, "Smart House Platform") {
+
+  Container(WebApp, "Web App", "React", "Интерфейс для пользователей в браузере")
+  Container(MobileApp, "Mobile App", "Kotlin/Swift", "Мобильное приложение для пользователей")
+
+  Container(ApiGateway, "API Gateway", "Kong", "Точка входа для всех внешних API-запросов")
+
+  Container(AuthService, "Auth Service", "Node.js", "Аутентификация и авторизация пользователей")
+  ContainerDb(AuthDb, "Auth DB", "MongoDB", "Хранит данные об учетных записях")
+
+  Container(UserService, "User Service", "Node.js", "Управление пользователями и их настройками")
+  ContainerDb(UserDb, "User DB", "MongoDB", "Пользовательские данные и конфигурации")
+
+  Container(NotificationService, "Notification Service", "Node.js", "Отправка уведомлений пользователям (e-mail, push, события)")
+  ContainerDb(NotificationDb, "Notification DB", "MongoDB", "Лог уведомлений и шаблоны")
+
+  Container(NotificationGateway, "Notification Gateway", "Node.js / WebSocket", "Реальное-time связь с пользователями")
+
+  Container(DeviceControlService, "Device Control Service", "Node.js", "Управление устройствами: отопление, свет, ворота, камеры")
+  ContainerDb(DeviceControlDb, "Device Control DB", "MongoDB", "Настройки и сценарии управления")
+
+  Container(DeviceInterfaceService, "Device Interface Service", "Node.js", "Интерфейс между системой и физическими устройствами")
+  ContainerDb(DeviceInterfaceDb, "Device Interface DB", "MongoDB", "Телеметрия и состояния устройств")
+
+  Container(ScenarioService, "Scenario Service", "Node.js", "Создание и выполнение пользовательских сценариев")
+  ContainerDb(ScenarioDb, "Scenario DB", "MongoDB", "Хранение сценариев")
+
+  Container(ConfigService, "Config Service", "Node.js", "Централизованное хранение конфигураций устройств")
+  ContainerDb(ConfigDb, "Config DB", "MongoDB", "Настройки и параметры устройств")
+
+  Container(BillingService, "Billing Service", "Node.js", "Управление подписками и платежами")
+  ContainerDb(BillingDb, "Billing DB", "MongoDB", "Платежная информация и планы")
+
+  Container(SupportService, "Support Service", "Node.js", "Система тикетов и поддержки клиентов")
+  ContainerDb(SupportDb, "Support DB", "MongoDB", "Заявки и обращения пользователей")
+
+  Container(Kafka, "Kafka", "Apache Kafka", "Обмен событиями между микросервисами")
+}
+
+System_Ext(ExternalDevices, "External Smart Devices", "Устройства сторонних производителей (по протоколу)")
+
+Rel(userWeb, WebApp, "Использует через браузер")
+Rel(userMobile, MobileApp, "Использует через приложение")
+Rel(WebApp, ApiGateway, "HTTP")
+Rel(MobileApp, ApiGateway, "HTTP")
+
+Rel(WebApp, NotificationGateway, "WebSocket")
+Rel(MobileApp, NotificationGateway, "WebSocket")
+
+Rel(ApiGateway, AuthService, "Запросы авторизации")
+Rel(ApiGateway, UserService, "Запросы пользовательских данных")
+Rel(ApiGateway, DeviceControlService, "Запросы на управление устройствами")
+Rel(ApiGateway, ScenarioService, "Запросы на сценарии")
+Rel(ApiGateway, SupportService, "Создание/просмотр тикетов")
+Rel(ApiGateway, BillingService, "Просмотр/оплата подписки")
+
+Rel(AuthService, AuthDb, "Чтение/запись")
+Rel(UserService, UserDb, "Чтение/запись")
+Rel(NotificationService, NotificationDb, "Чтение/запись")
+Rel(DeviceControlService, DeviceControlDb, "Чтение/запись")
+Rel(DeviceInterfaceService, DeviceInterfaceDb, "Чтение/запись")
+Rel(ScenarioService, ScenarioDb, "Чтение/запись")
+Rel(ConfigService, ConfigDb, "Чтение/запись")
+Rel(BillingService, BillingDb, "Чтение/запись")
+Rel(SupportService, SupportDb, "Чтение/запись")
+
+Rel(DeviceControlService, Kafka, "Публикует команды управления")
+Rel(DeviceInterfaceService, Kafka, "Читает команды, публикует телеметрию")
+Rel(Kafka, NotificationService, "События от других сервисов")
+Rel(NotificationService, NotificationGateway, "Передаёт события по WebSocket")
+
+Rel(DeviceControlService, ConfigService, "Получение конфигураций")
+Rel(ScenarioService, ConfigService, "Чтение настроек")
+Rel(ScenarioService, DeviceControlService, "Управляет действиями через API или Kafka")
+
+Rel(BillingService, UserService, "Получение информации о пользователях")
+Rel(DeviceInterfaceService, ExternalDevices, "Протокол взаимодействия с устройствами")
+
+@enduml
